@@ -30,7 +30,7 @@ struct hostent* FAR WINAPI HOOK_gethostbyname(const char *cp)
 
 int WINAPI HOOK_send(SOCKET s, const char* buf, int len, int flags)
 {
-	if (strstr(buf, "GET /0.3.7/servers") != NULL)
+	if (strstr(buf, "GET /0.3.DL/servers") != NULL)
 		return pSend(s, g_szHTTPHeaders, g_iHTTPHeadersLen, flags);
 
 	return pSend(s, buf, len, flags);
@@ -65,7 +65,7 @@ GET %s HTTP/1.1\r\n\
 Content-Type: text/html\r\n\
 Host: %s\r\n\
 Accept: text/html, */*\r\n\
-User-Agent: Mozilla/3.0 (compatible; SA:MP v0.3.7)\r\n\r\n", szPath, g_szHost);
+User-Agent: Mozilla/3.0 (compatible; SA:MP v0.3.DL)\r\n\r\n", szPath, g_szHost);
 
 	g_iHTTPHeadersLen = strlen(g_szHTTPHeaders);
 }
