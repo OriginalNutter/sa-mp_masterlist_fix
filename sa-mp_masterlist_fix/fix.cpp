@@ -5,8 +5,9 @@
 #pragma comment(lib, "detours.lib")
 #pragma comment(lib, "ws2_32.lib")
 
-#define MASTERLIST_HOST_DEFAULT "monitor.sacnr.com"
-#define MASTERLIST_PATH_DEFAULT "/list/masterlist.txt"
+#define MASTERLIST_HOST_DEFAULT "03dl.is-very.cool"
+#define MASTERLIST_PATH_DEFAULT "/list/internet"
+#define HOSTEDLIST_PATH_DEFAULT "/list/hosted"
 
 int (WINAPI *pSend)(SOCKET s, const char* buf, int len, int flags) = send;
 int WINAPI HOOK_send(SOCKET s, const char* buf, int len, int flags);
@@ -14,15 +15,26 @@ struct hostent* FAR(WINAPI *pgethostbyname)(const char *cp) = gethostbyname;
 struct hostent* FAR WINAPI HOOK_gethostbyname(const char *cp);
 
 char g_szHost[128];
-char g_szHTTPHeaders[256 + 200];
-int g_iHTTPHeadersLen;
+
+char g_szInternetHTTPHeaders[256 + 200];
+int g_iInternetHTTPHeadersLen;
+
+char g_szHostedHTTPHeaders[256 + 200];
+int g_iHostedHTTPHeadersLen;
 
 struct hostent* FAR WINAPI HOOK_gethostbyname(const char *cp)
 {
 	int iCurTab = *(int*)(0x4EE6E8); // current tab (fav/internet/hosted)
-	if (!strcmp(cp, "lists.sa-mp.com") && iCurTab == 1)
+	if (!strcmp(cp, "lists.sa-mp.com"))
 	{
-		return pgethostbyname(g_szHost);
+		if (iCurTab == 1)
+		{
+			return pgethostbyname(g_szHost);
+		}
+		else if (iCurTab == 2)
+		{
+			return pgethostbyname(g_szHost);
+		}
 	}
 	
 	return pgethostbyname(cp);
@@ -30,8 +42,11 @@ struct hostent* FAR WINAPI HOOK_gethostbyname(const char *cp)
 
 int WINAPI HOOK_send(SOCKET s, const char* buf, int len, int flags)
 {
-	if (strstr(buf, "GET /0.3.DL/servers") != NULL)
-		return pSend(s, g_szHTTPHeaders, g_iHTTPHeadersLen, flags);
+	if (strstr(buf, "GET /0.3.DL/internet") != NULL)
+		return pSend(s, g_szInternetHTTPHeaders, g_iInternetHTTPHeadersLen, flags);
+
+	if (strstr(buf, "GET /0.3.DL/hosted") != NULL)
+		return pSend(s, g_szHostedHTTPHeaders, g_iHostedHTTPHeadersLen, flags);
 
 	return pSend(s, buf, len, flags);
 }
@@ -40,14 +55,15 @@ void LoadConfig()
 {
 	FILE *fileConfig;
 	bool bConfigWritten = false;
-	char szPath[128];
+	char szInternetPath[128];
+	char szHostedPath[128];
 
 	if (fopen_s(&fileConfig, "masterlist_fix.cfg", "r") == 0)
 	{
-		if (fgets(g_szHost, sizeof(g_szHost), fileConfig) != NULL && fgets(szPath, sizeof(szPath), fileConfig) != NULL)
+		if (fgets(g_szHost, sizeof(g_szHost), fileConfig) != NULL && fgets(szInternetPath, sizeof(szInternetPath), fileConfig) != NULL)
 		{
 			g_szHost[strcspn(g_szHost, "\r\n")] = 0;
-			szPath[strcspn(szPath, "\r\n")] = 0;
+			szInternetPath[strcspn(szInternetPath, "\r\n")] = 0;
 
 			bConfigWritten = true;
 		}
@@ -57,17 +73,28 @@ void LoadConfig()
 	if (!bConfigWritten)
 	{
 		strcpy_s(g_szHost, sizeof(g_szHost), MASTERLIST_HOST_DEFAULT);
-		strcpy_s(szPath, sizeof(szPath), MASTERLIST_PATH_DEFAULT);
+		strcpy_s(szInternetPath, sizeof(szInternetPath), MASTERLIST_PATH_DEFAULT);
 	}
 
-	sprintf_s(g_szHTTPHeaders, sizeof(g_szHTTPHeaders), "\
+	sprintf_s(g_szInternetHTTPHeaders, sizeof(g_szInternetHTTPHeaders), "\
 GET %s HTTP/1.1\r\n\
 Content-Type: text/html\r\n\
 Host: %s\r\n\
 Accept: text/html, */*\r\n\
-User-Agent: Mozilla/3.0 (compatible; SA:MP v0.3.DL)\r\n\r\n", szPath, g_szHost);
+User-Agent: Mozilla/3.0 (compatible; SA:MP v0.3.DL)\r\n\r\n", szInternetPath, g_szHost);
 
-	g_iHTTPHeadersLen = strlen(g_szHTTPHeaders);
+	g_iInternetHTTPHeadersLen = strlen(g_szInternetHTTPHeaders);
+
+	strcpy_s(szHostedPath, sizeof(szHostedPath), HOSTEDLIST_PATH_DEFAULT);
+
+	sprintf_s(g_szHostedHTTPHeaders, sizeof(g_szHostedHTTPHeaders), "\
+GET %s HTTP/1.1\r\n\
+Content-Type: text/html\r\n\
+Host: %s\r\n\
+Accept: text/html, */*\r\n\
+User-Agent: Mozilla/3.0 (compatible; SA:MP v0.3.DL)\r\n\r\n", szHostedPath, g_szHost);
+
+	g_iHostedHTTPHeadersLen = strlen(g_szHostedHTTPHeaders);
 }
 
 void InitializeFix()
