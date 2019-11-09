@@ -1,6 +1,6 @@
 # SA-MP Masterlist Fix
 ~~Fixes the infamous SA-MP internet tab bug.~~
-Uses an alternative list of servers to replace the now deleted server lists for 0.3.DL which happened a few days after 04 Novemeber 2019.
+Uses an alternative list of servers to replace the now deleted server lists for 0.3.DL which happened a few days after 04 November 2019.
 
 [4/11](https://forum.sa-mp.com/showthread.php?p=4120379#post4120379)
 
